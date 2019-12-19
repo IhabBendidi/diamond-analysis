@@ -1,0 +1,434 @@
+---
+title: "Assignement"
+author: "Shubham Khandelwal"
+date: "November 4, 2019"
+output: pdf_document
+---
+
+
+# 0 - Loading the dataset
+```{r}
+DiamondData <- read.csv("~/DiamondData_51309e6fb24ac297b10b919e60060c90.csv")
+```
+
+## Importing the tidyverse package
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+```
+
+# 1 - Cleanup of the dataset
+
+We'll start by having a glimpse on the dataset and the type of its variables
+
+```{r echo=FALSE}
+glimpse(DiamondData)
+```
+
+The results show that our dataset contains 50,000 observations, described by 10 variables, with types ranging from factors to doubles to integers.
+
+A quick exploration of the dataset shows that the ``cut`` variable got 6 different categories observations instead of 5 as follows.
+
+```{r echo=FALSE}
+DiamondData %>%
+  group_by(cut) %>%
+  summarize(count = n())
+```
+
+We will replace the ``Very Geod`` category with the ``Very Good`` category with the following code :
+
+```{r}
+DiamondData$cut <- str_replace(as.character(DiamondData$cut), "Very Geod", "Very Good")
+DiamondData %>%
+  group_by(cut) %>%
+  summarize(count = n())
+```
+
+
+A test for the existence of NA and missing values shows a number of them in the ``depth``, ``table``, ``price``, ``x``, ``y`` and ``z`` variables as follows :
+
+```{r echo=FALSE}
+print("Missing values for Depth :")
+summarise(DiamondData,count = sum(is.na(DiamondData$depth)))$count
+
+print("Missing values for table :")
+summarise(DiamondData,count = sum(is.na(DiamondData$table)))$count
+
+print("Missing values for Price :")
+summarise(DiamondData,count = sum(is.na(DiamondData$price)))$count
+
+print("Missing values for x :")
+summarise(DiamondData,count = sum(is.na(DiamondData$x)))$count
+
+print("Missing values for y :")
+summarise(DiamondData,count = sum(is.na(DiamondData$y)))$count
+
+print("Missing values for z :")
+summarise(DiamondData,count = sum(is.na(DiamondData$z)))$count
+```
+
+We observe that we only got missing values for quantitative variables. We inpute the missing values with the median of each variable as follows :
+
+```{r}
+DiamondData <- DiamondData %>%
+  mutate(z= replace(z,is.na(z),median(z, na.rm = TRUE)))
+
+DiamondData <- DiamondData %>%
+  mutate(y= replace(y,is.na(y),median(y, na.rm = TRUE)))
+   
+DiamondData <- DiamondData %>%
+  mutate(x = replace(x, is.na(x), median(x, na.rm = TRUE)))
+
+DiamondData <- DiamondData %>%
+  mutate(price= replace(price,is.na(price),median(price, na.rm = TRUE)))
+
+DiamondData <- DiamondData %>%
+  mutate(table= replace(table,is.na(table),median(table, na.rm = TRUE)))
+
+DiamondData <- DiamondData %>%
+  mutate(depth= replace(depth,is.na(depth),median(depth, na.rm = TRUE)))
+```
+
+A following task would be to set the decimal precision for the ``carat`` variable to two decimals :
+
+```{r}
+DiamondData$carat <- round(DiamondData$carat, digits=2)
+```
+
+A look through our and corrected dataset shows us that the cleanup process is complete :
+
+```{r}
+glimpse(DiamondData)
+```
+
+# 2 - Initial analysis :
+
+## Variable summary & Data visualisation :
+
+* A basic summary of the ``carat`` variable :
+```{r echo=FALSE}
+summary(DiamondData$carat)
+```
+The ``carat`` values seem mostly centered around the ``0 - 1`` values in most of the observations, with a quarter of them going beyond ``1`` toward much higher values, which shows through the ``maximum value`` and the ``Mean`` that is so close to the ``3rd Quarter``, and that the majority of the diamonds are on the low end in terms of ``carat``.
+
+
+* A basic summary of the ``cut`` variable :
+```{r echo=FALSE}
+tem<-DiamondData %>%
+  group_by(cut) %>%
+  summarize(count = n())
+tem
+```
+```{r echo=FALSE}
+piepercent<- round(100*tem$count/sum(tem$count), 1)
+pie(tem$count,tem$cut,main="Diamond's cut ratio",col = rainbow(length(tem$count)))
+```
+
+Most of the values of the ``cut`` variable are centered in the ``Ideal`` value, followed by the ``Premium`` value and ``Very Good`` respectively. This obviously shows that the dominating majority of the diamonds pieces in our dataset are of very superior cut.
+
+* A basic summary of the ``color`` variable :
+```{r echo=FALSE}
+summary(DiamondData$color)
+```
+```{r echo=FALSE}
+plot(DiamondData$color,main="Barplot of the Colors of the diamonds",xlab="Diamond colors from best (D) to worst (J)",ylab="Count",col = rainbow(length(DiamondData$color)))
+```
+The majority of the diamonds in the dataset appear to be of medium colors, with values ranging ``E`` to ``H``, followed by a high count of diamonds with the best color ``D``, and a very low count of diamonds with the worst color ``J``. This shows that the dataset contains mostly diamonds with medium to high quality colors.
+
+* A basic summary of the ``clarity`` variable :
+```{r echo=FALSE}
+summary(DiamondData$clarity)
+```
+The ``clarity`` variable shows a distribution mostly focused on the medium quality, with the values ``SI1`` and ``VS2`` respectively, with the count decreasing as we increase or decrease clarity The majority of the diamonds in the dataset are of medium clarity.
+
+* A basic summary of the ``depth`` variable :
+```{r echo=FALSE}
+summary(DiamondData$depth)
+```
+* A basic summary of the ``table`` variable :
+```{r echo=FALSE}
+summary(DiamondData$table)
+```
+The ``Depth`` and ``table`` variables show a usual normal distribution.
+
+* A basic summary of the ``x`` variable :
+```{r echo=FALSE}
+summary(DiamondData$x)
+```
+```{r echo=FALSE}
+hist(DiamondData$x, main="Histogram of the length of the diamonds",xlab="Length of the diamond in mm",col="blue")
+```
+The count of small length diamonds appear to be higher and slowly decreases as the length increase.
+
+* A basic summary of the ``y`` variable :
+```{r echo=FALSE}
+summary(DiamondData$y)
+```
+* A basic summary of the ``z`` variable :
+```{r echo=FALSE}
+summary(DiamondData$z)
+```
+```{r echo=FALSE}
+plot(x=DiamondData$y,y=DiamondData$z,main="Scatterplot of height per width", xlab="Width of the diamond by mm",ylab="Height of the diamond by mm",col="green",pch=19)
+```
+
+The variables ``y`` and ``z`` appear to be linearly correlated, as they are about the size and volume of the diamond, with some outliers.
+
+
+# 3 - Price Variable Analysis : 
+
+## a - Price variable description :
+
+```{r echo=FALSE}
+summary(DiamondData$price)
+```
+```{r echo=FALSE}
+hist(DiamondData$price,main="Histogram of diamond's price distribution",xlab="Diamond's price in US dollar",col="grey")
+```
+
+We notice that most of the diamond prices are on the low end, justifying the low observed ``Mean`` and ``3rd Quarter`` compared to the maximum value, with very few having high prices.
+
+## b - Price groupings : 
+
+If we divide the price into three groups, the ``low`` group would go from ``0`` to ``900`` being almost the first Quarter. 
+The ``medium`` group would be from ``900`` to ``4000`` being close to the mean.
+The ``high`` group would be from ``4000`` to ``20000``
+
+* A summary of diamonds with low prices :
+```{r echo=FALSE}
+print("Summary of carat ")
+summary(DiamondData$carat [DiamondData$price<900])
+print("Summary of color ")
+summary(DiamondData$color [DiamondData$price<900])
+print("Summary of clarity ")
+summary(DiamondData$clarity [DiamondData$price<900])
+print("Summary of depth ")
+summary(DiamondData$depth [DiamondData$price<900])
+print("Summary of table ")
+summary(DiamondData$table [DiamondData$price<900])
+print("Summary of x ")
+summary(DiamondData$x [DiamondData$price<900])
+print("Summary of y ")
+summary(DiamondData$y [DiamondData$price<900])
+print("Summary of z ")
+summary(DiamondData$z [DiamondData$price<900])
+```
+
+
+
+* A summary of diamonds with medium prices : 
+```{r echo=FALSE}
+print("Summary of carat ")
+summary(DiamondData$carat [DiamondData$price>900 & DiamondData$price<4000])
+print("Summary of color ")
+summary(DiamondData$color [DiamondData$price>900 & DiamondData$price<4000])
+print("Summary of clarity ")
+summary(DiamondData$clarity [DiamondData$price>900 & DiamondData$price<4000])
+print("Summary of depth ")
+summary(DiamondData$depth [DiamondData$price>900 & DiamondData$price<4000])
+print("Summary of table ")
+summary(DiamondData$table [DiamondData$price>900 & DiamondData$price<4000])
+print("Summary of x ")
+summary(DiamondData$x [DiamondData$price>900 & DiamondData$price<4000])
+print("Summary of y ")
+summary(DiamondData$y [DiamondData$price>900 & DiamondData$price<4000])
+print("Summary of z ")
+summary(DiamondData$z [DiamondData$price>900 & DiamondData$price<4000])
+```
+
+
+
+* A summary of diamonds with high prices :
+
+```{r echo=FALSE}
+print("Summary of carat ")
+summary(DiamondData$carat [DiamondData$price>4000 & DiamondData$price<20000])
+print("Summary of color ")
+summary(DiamondData$color [DiamondData$price>4000 & DiamondData$price<20000])
+print("Summary of clarity ")
+summary(DiamondData$clarity [DiamondData$price>4000 & DiamondData$price<20000])
+print("Summary of depth ")
+summary(DiamondData$depth [DiamondData$price>4000 & DiamondData$price<20000])
+print("Summary of table ")
+summary(DiamondData$table [DiamondData$price>4000 & DiamondData$price<20000])
+print("Summary of x ")
+summary(DiamondData$x [DiamondData$price>4000 & DiamondData$price<20000])
+print("Summary of y ")
+summary(DiamondData$y [DiamondData$price>4000 & DiamondData$price<20000])
+print("Summary of z ")
+summary(DiamondData$z [DiamondData$price>4000 & DiamondData$price<20000])
+```
+
+## c - Price exploration for different cut type :
+
+```{r echo=FALSE}
+boxplot(DiamondData$price [DiamondData$cut == "Fair"],DiamondData$price [DiamondData$cut == "Good"],DiamondData$price [DiamondData$cut == "Very Good"],DiamondData$price [DiamondData$cut == "Premium"],DiamondData$price [DiamondData$cut == "Ideal"],
+                names = c("Fair","Good","Very Good","Premium","Ideal"),main="Prices distribution for each diamond cut type", col="gold",ylab = "Price ranges in US dollar",xlab="Diamond Cut types")
+```
+The price distribution for the different types of cut does not appear to have many differences, with all price distributions being mostly located on the 'low' range of diamond prices, with closely similar medians and with only a very slightly pricier ``premium`` type. The price does not appear to depend on the cut type.
+
+
+## d - Attributes correlated with price : 
+
+Based on the summaries at Part 3-b, the ``carat`` isn't well correlated with price, as it has almost the same distribution in all three price ranges. THe same could be said about the ``depth`` and ``table``,  as they remain with almost the same distribution of values, mean and median values over the three price ranges.
+
+Color is also not well correlated, as for all price ranges, its distribution of frequency remains unchanging.``clarity``'s distribution changes a bit over the three price ranges, but the change aren't found to be significant, with just variations over the medium clarity types.
+
+Based on the boxplot in Part 3-c, the ``cut`` variable is also not very well correlated, as it remains with the same range distribution of prices over all the cut types.
+
+The most correlated variables appear to be ``x``, ``y`` and ``z``, that appear to grow linearly with the price range (with ``y`` and ``z`` having an outlier in the medium price range.)
+
+# 4 - Diamond prices by clarity and cuts : 
+
+* Frequency of diamonds by clarity level :
+```{r echo=FALSE}
+DiamondData %>%
+  group_by(clarity) %>%
+  summarize(count = n())
+```
+
+
+
+* Frequency of diamonds by cut type : 
+```{r echo=FALSE}
+DiamondData %>%
+  group_by(cut) %>%
+  summarize(count = n())
+```
+
+
+
+```{r}
+p <- ggplot(data = DiamondData, aes(1:50000, price, color = cut)) +
+  geom_point() +
+  scale_color_manual(values = c("Fair" = "red", "Good" = "blue", "Very Good" = "yellow", "Premium" = "green","Ideal" = "black"))
+p <- p + labs(x = "Dataset Index",y = "Price in US dollar",title = "Diamond Price distribution with type of cut")
+p
+```
+
+
+
+```{r}
+m <- ggplot(data = DiamondData, aes(1:50000, price, color = clarity)) +
+  geom_point() +
+  scale_color_manual(values = c("I1" = "red", "SI2" = "blue", "SI1" = "yellow", "VS2" = "green","VS1" = "black","VVS2" = "grey","VVS1" = "purple","IF" = "brown"))
+m <- m + labs(x = "Dataset Index",y = "Price in US dollar",title = "Diamond Price distribution with type of clarity")
+m
+```
+
+
+
+
+# 5 - Analysis of the carat, depth, table and the dimensions (x,y,z) :
+
+## a - Volume variable :
+
+Computing of the new Volume variable and insertion into the dataset is as follows :
+```{r}
+volume <- DiamondData$x  * DiamondData$y * DiamondData$z
+DiamondData$volume <- volume
+DiamondData$volume <- round(DiamondData$volume, digits=2)
+glimpse(DiamondData)
+```
+
+
+```{r}
+plot(x=DiamondData$volume , y=DiamondData$price,col="blue",main="Price of diamonds by volume (mm³)",xlab="Volume of the diamond by mm³",ylab="Price of the diamond by US dollars")
+```
+
+Diamond's ``price`` appears to be correlated exponentially to ``volume`` of the diamond.
+
+## b - Correlation of the carat and volume variables : 
+
+```{r}
+print("Pearson correlation test result :")
+cor(DiamondData$carat,DiamondData$volume,method="pearson")
+print("Spearman correlation test result :")
+cor(DiamondData$carat,DiamondData$volume,method="spearman")
+```
+
+The weak and close to 0 coefficient of Pearson shows that there is very weak linear correlation between the carat and volume variables. But the coefficient of Spearman shows the existence of a strong monotonic correlation between the two variables.
+
+The next plot shows it more clearly :
+
+```{r echo=FALSE}
+plot(x=DiamondData$carat , y=DiamondData$volume, col="gold",xlab="Carat of the diamond",ylab = "Volume of the diamond by mm³", main = "Volume of diamonds by their carat value")
+abline(lm(DiamondData$volume ~ DiamondData$carat))
+```
+
+## c- Exploration of relationships between table & depth
+
+```{r}
+print("Pearson correlation test result :")
+cor(DiamondData$table,DiamondData$depth,method="pearson")
+print("Spearman correlation test result :")
+cor(DiamondData$table,DiamondData$depth,method="spearman")
+```
+The coefficients of correlation show with how close to 0 they are that there is almost no correlation, whether linear or monotonic between the two variables.
+
+```{r}
+plot(y=DiamondData$table,x=DiamondData$depth,col="blue",xlab="Depth of the diamond",ylab="Table of the diamond",main="Correlation between depth and table of the diamond")
+```
+
+
+The plot shows no apparent linear or non linear correlation.
+
+## d - Exploration of relationship of table with other vaiables : 
+
+* Relationship of table with volume :
+
+```{r echo=FALSE}
+print("Pearson correlation test result :")
+cor(DiamondData$table,DiamondData$volume,method="pearson")
+print("Spearman correlation test result :")
+cor(DiamondData$table,DiamondData$volume,method="spearman")
+```
+
+* Relationship of table with x :
+
+```{r echo=FALSE}
+print("Pearson correlation test result :")
+cor(DiamondData$table,DiamondData$x,method="pearson")
+print("Spearman correlation test result :")
+cor(DiamondData$table,DiamondData$x,method="spearman")
+```
+
+* Relationship of table with y :
+
+```{r echo=FALSE}
+print("Pearson correlation test result :")
+cor(DiamondData$table,DiamondData$y,method="pearson")
+print("Spearman correlation test result :")
+cor(DiamondData$table,DiamondData$y,method="spearman")
+```
+
+* Relationship of table with z :
+
+```{r echo=FALSE}
+print("Pearson correlation test result :")
+cor(DiamondData$table,DiamondData$z,method="pearson")
+print("Spearman correlation test result :")
+cor(DiamondData$table,DiamondData$z,method="spearman")
+```
+
+* Relationship of table with price : 
+
+```{r echo=FALSE}
+print("Pearson correlation test result :")
+cor(DiamondData$table,DiamondData$price,method="pearson")
+print("Spearman correlation test result :")
+cor(DiamondData$table,DiamondData$price,method="spearman")
+```
+
+* Relationship of table with carat : 
+
+```{r echo=FALSE}
+print("Pearson correlation test result :")
+cor(DiamondData$table,DiamondData$carat,method="pearson")
+print("Spearman correlation test result :")
+cor(DiamondData$table,DiamondData$carat,method="spearman")
+```
+
+
+It appears that the ``table`` variable doesn't correlate with the other variables linearly or monotonically, with all the coeficcients of correlation close to zero.
